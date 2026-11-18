@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101f25">
+<link rel="icon" href="data:,">
+<title>Meridian / 2030 — Open World</title>
+<style>
+:root{color-scheme:dark;--ink:#f7f3e8;--muted:#b6c9c7;--mint:#c9ff9d;--line:#bbddd335;--glass:#102328e8;--mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:#122830;color:var(--ink);font-family:system-ui,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--mint);outline-offset:4px}
+canvas#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,#0a1c256e,transparent 18%,transparent 61%,#07171b9e),linear-gradient(90deg,#07191d68,transparent 56%)}
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:24px 34px;border-bottom:1px solid #d6f4eb31;background:#10252b35}
+.brand{display:flex;align-items:center;gap:11px;font-size:13px;font-weight:800;letter-spacing:.17em;white-space:nowrap}
+.brand svg{width:32px;height:32px;color:var(--mint)}
+.brand span span{color:var(--mint)}
+.clock{font:11px var(--mono);letter-spacing:.16em;white-space:nowrap}
+.tools{display:flex;gap:6px}
+.tool,.outline{border:1px solid var(--line);background:#12272acd;border-radius:5px;padding:9px 11px;font:11px var(--mono);letter-spacing:.06em;white-space:nowrap}
+.tool:hover,.outline:hover{background:#29443d;border-color:#bcf1ad}
+.tool[aria-pressed=true]{color:var(--mint);border-color:#b7ffaa77}
+.eyebrow{color:var(--mint);font:700 11px var(--mono);letter-spacing:.22em;text-transform:uppercase}
+.eyebrow i{display:inline-block;width:6px;height:6px;background:var(--mint);margin-right:9px;vertical-align:2px;transform:rotate(45deg);box-shadow:0 0 14px var(--mint)}
+.intro{position:fixed;left:5.5vw;bottom:13.5vh;max-width:min(560px,78vw);text-shadow:0 2px 30px #10272880}
+h1{font-size:clamp(63px,10.5vw,158px);letter-spacing:-.09em;line-height:.82;font-weight:790;margin:14px 0 21px}
+h1 em{display:block;color:#d8efc7;font-style:normal;font-weight:330;font-size:.63em;letter-spacing:-.07em;margin-top:10px}
+.intro p{max-width:360px;margin:0 0 21px;color:#edf2e6;font-size:15px;line-height:1.6}
+.actions{display:flex;gap:10px;align-items:center}
+.primary{background:var(--mint);border:1px solid var(--mint);color:#12251a;border-radius:5px;padding:12px 16px;font-weight:750;font-size:13px}
+.primary:hover{background:#e4ffce}
+.primary span{margin-left:12px}
+.mapbox{position:fixed;bottom:34px;right:34px;width:196px;background:#102226e8;border:1px solid var(--line);border-radius:7px;overflow:hidden;box-shadow:0 15px 40px #06191c45}
+.maphead,.mapfoot{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;font:10px var(--mono);letter-spacing:.1em;color:var(--muted)}
+.maphead strong{color:var(--ink);font-weight:600}
+#map{width:100%;display:block;height:auto;cursor:pointer;background:#102d35}
+.mapfoot{border-top:1px solid var(--line)}
+.mapfoot button{border:0;background:none;padding:0;color:var(--mint);font:inherit}
+#status{position:fixed;left:34px;bottom:34px;display:flex;align-items:center;gap:10px;color:#ecf3e9;font:11px var(--mono);letter-spacing:.09em}
+#status b{color:var(--mint);font-weight:600}
+#bearing{position:fixed;top:96px;left:50%;transform:translateX(-50%);color:#eff9e8;font:10px var(--mono);letter-spacing:.24em;text-align:center;text-shadow:0 1px 6px #101d1c;pointer-events:none}
+#bearing::after{content:"";display:block;width:1px;height:9px;background:var(--mint);margin:5px auto 0}
+#cross{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:#fff9;pointer-events:none}
+#loc{position:fixed;top:109px;left:34px;text-shadow:0 2px 12px #091918}
+#loc strong{display:block;font-size:25px;letter-spacing:-.04em;margin-top:3px}
+#marker{position:fixed;pointer-events:none;color:var(--mint);font:10px var(--mono);letter-spacing:.08em;text-align:center;white-space:nowrap;text-shadow:0 1px 5px #0b2720,0 1px 10px #0b2720;transform:translate(-50%,-50%)}
+#marker::before{content:"";display:block;margin:0 auto 6px;border:1px solid currentColor;transform:rotate(45deg);width:8px;height:8px;box-shadow:0 0 10px #d8ffd186}
+#prompt{position:fixed;bottom:14%;left:50%;transform:translateX(-50%);max-width:80vw;background:#122b29e8;border:1px solid #d0ffa480;color:var(--mint);border-radius:5px;padding:11px 15px;font:12px var(--mono)}
+#toast{position:fixed;top:103px;right:34px;background:#153331f2;border:1px solid #c9ff9d66;padding:11px 14px;border-radius:5px;font:11px var(--mono);color:var(--mint);pointer-events:none;max-width:75vw}
+dialog{color:var(--ink);background:#122528f5;border:1px solid #a9cfc65e;border-radius:10px;padding:0;width:min(600px,calc(100vw - 28px));max-height:88dvh;box-shadow:0 20px 100px #0008}
+dialog::backdrop{background:#0614188c;backdrop-filter:blur(5px)}
+.dialog-inner{padding:27px}
+.dialog-inner h2{margin:5px 0 13px;font-size:34px;letter-spacing:-.05em}
+.dialog-inner p{color:#d3e0d8;line-height:1.6;margin:10px 0 19px}
+.close{position:absolute;top:20px;right:20px}
+.routes{display:grid;gap:7px}
+.route{width:100%;text-align:left;display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:5px;padding:9px 12px;background:#1b3537;font-size:14px}
+.route:hover{border-color:var(--mint);background:#263f38}
+.route .num{color:var(--mint);font:11px var(--mono)}
+.route small{margin-left:auto;color:#b9d2c7;font:10px var(--mono);white-space:nowrap}
+.controls{display:grid;grid-template-columns:1fr auto;gap:9px 12px;font-size:14px;color:#e0ede5}
+kbd{color:var(--mint);font:11px var(--mono);border:1px solid var(--line);padding:3px 5px;border-radius:3px;text-align:right}
+#touch{display:none;position:fixed;bottom:60px;left:15px;gap:7px;align-items:flex-end}
+#touch button{background:#10282bce;border:1px solid #c8e5d560;border-radius:7px;width:43px;height:41px;touch-action:none;font-size:17px}
+.pad{display:grid;grid-template-columns:repeat(3,43px);gap:4px;text-align:center}
+.pad button:first-child{grid-column:2}
+.pad button:nth-child(2){grid-column:1}
+[hidden]{display:none!important}
+@media(pointer:coarse){body.play #touch{display:flex}}
+@media(max-width:700px){header{padding:13px 12px}.brand{letter-spacing:.1em;font-size:11px;gap:5px}.brand svg{width:24px;height:24px}.clock{display:none}.tool{padding:8px 6px;font-size:10px}.intro{left:18px;bottom:17vh;max-width:89vw}.intro h1{font-size:clamp(62px,15vw,100px)}.intro p{max-width:290px}.mapbox{width:124px;right:12px;bottom:16px}body:not(.play) .mapbox{display:none}#status{left:15px;bottom:18px;font-size:9px;letter-spacing:0}#loc{top:73px;left:14px}#loc strong{font-size:19px}#bearing{top:70px;left:auto;right:13px;transform:none}#toast{right:12px;top:123px}#prompt{bottom:34%;white-space:normal}.dialog-inner{padding:20px}}
+</style>
+</head>
+<body>
+<canvas id="world" aria-label="Interactive 3D view of Meridian"></canvas>
+<div class="shade"></div>
+<header>
+  <div class="brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="13.5" stroke="currentColor"/><path d="M2 16h28M16 2c-9 8-9 20 0 28m0-28c9 8 9 20 0 28M7 7l18 18" stroke="currentColor"/></svg><span>MERIDIAN <span>/ 2030</span></span></div>
+  <div class="clock" id="clock">18:24 LOCAL</div>
+  <div class="tools"><button class="tool" id="light" title="Cycle time of day (T)">DUSK</button><button class="tool" id="sound" aria-pressed="false" title="Toggle ambient sound">SOUND OFF</button><button class="tool" id="help" title="Controls (?)" aria-label="Controls">?</button></div>
+</header>
+<section class="intro" id="intro">
+  <div class="eyebrow"><i></i>Open world · Pacific coast</div>
+  <h1>Meridian<em>2030</em></h1>
+  <p>A coastal city built for higher tides. Cross the harbor, trace the Silkline rail, and see what grew where the water came in.</p>
+  <div class="actions"><button class="primary" id="enter">Explore Meridian <span aria-hidden="true">↗</span></button><button class="outline" id="atlasIntro">OPEN ATLAS</button></div>
+</section>
+<div id="bearing" hidden></div>
+<div id="loc" hidden><button class="tool" id="mode" hidden>FLIGHT [F]</button><strong id="zone">South Lookout</strong></div>
+<div id="cross" hidden></div>
+<div id="marker" hidden></div>
+<button id="prompt" hidden></button>
+<div id="toast" role="status" hidden></div>
+<aside class="mapbox" aria-label="District minimap"><div class="maphead"><strong>MERIDIAN BAY</strong><span>↑ N</span></div><canvas id="map" width="238" height="191" role="img" aria-label="Map of the bay and your position"></canvas><div class="mapfoot"><span id="surveys">0 / 5 LOGGED</span><button id="atlas" title="Open atlas (M)">ATLAS ↗</button></div></aside>
+<div id="status"><b id="altitude">54 M</b><span id="hint">SOUTH APPROACH</span></div>
+<div id="touch" aria-label="Touch movement controls"><div class="pad"><button data-key="KeyW" aria-label="Forward">↑</button><button data-key="KeyA" aria-label="Left">←</button><button data-key="KeyS" aria-label="Back">↓</button><button data-key="KeyD" aria-label="Right">→</button></div><button data-key="Space" aria-label="Ascend">＋</button><button data-key="KeyC" aria-label="Descend">−</button></div>
+<dialog id="panel" aria-labelledby="panelTitle"><div class="dialog-inner"><button class="tool close" id="close" aria-label="Close dialog">✕</button><div class="eyebrow" id="panelTag"></div><h2 id="panelTitle"></h2><div id="panelBody"></div></div></dialog>
+<noscript>Enable JavaScript in your browser to explore Meridian.</noscript>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('world'), gl = canvas.getContext('webgl', {alpha:false, antialias:true, powerPreference:'high-performance'});
+const rad = Math.PI / 180, TAU = Math.PI * 2;
+const clamp = (x,a,b) => Math.min(b,Math.max(a,x));
+const lerp = (a,b,t) => a+(b-a)*t;
+let seed = 2030;
+function rnd(){ seed = (Math.imul(1664525,seed)+1013904223)>>>0; return seed/4294967296; }
+function color(hex){return [0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255);}
+const scale = (c,k) => c.map(x=>x*k);
+const pick = xs => xs[Math.floor(rnd()*xs.length)];
+const landmarks = [
+  {name:'South Lookout',x:0,z:-125,y:6,view:[0,28,-132,0,-.065],type:'Observation deck',entry:'At extreme high tide, the water reaches the second set of marks on the pier. The lower walkways are built to flood, while the rail and market stay open above them.'},
+  {name:'Tidal Commons',x:-132,z:15,y:6,view:[-132,12,-7,0,0],type:'Living shoreline',entry:'These terraces used to be a car park. They hold rainwater on the way down to the bay. Beyond the footpaths, the planted edges are left alone through nesting season.'},
+  {name:'Silkline Exchange',x:0,z:48,y:7,view:[0,10,26,0,.02],type:'Transit hub',entry:'The harbor line runs above the projected flood level. At night the same tracks bring groceries and repair parts into the city, straight to the district lockers.'},
+  {name:'Helios Spire',x:0,z:137,y:12,view:[0,14,113,0,.24],type:'Energy cooperative',entry:'The Spire stores surplus energy from the harbor. During an outage its batteries serve cooling rooms, the water pumps and a public lift to the roof garden.'},
+  {name:'Kelpworks',x:149,z:96,y:7,view:[149,12,72,0,.01],type:'Offshore farm',entry:'The floating squares move with the tide. Each holds seed lines for kelp. Small electric tenders bring the harvest to the shore for food, fertilizer and materials research.'}
+];
+let visited = new Set();
+try {const saved=JSON.parse(localStorage.getItem('meridian2030.log')||'[]');if(Array.isArray(saved))visited=new Set(saved.filter(i=>Number.isInteger(i)&&landmarks[i]));} catch {}
+const slots = [
+  {name:'DUSK',clock:'18:24', sun:[.15,.13,.98],sky:[.155,.42,.54],horizon:[.91,.62,.44],fog:[.58,.61,.54],light:[1.29,1.09,.91],night:.17},
+  {name:'NIGHT',clock:'22:10', sun:[-.58,.145,.80],sky:[.025,.058,.14],horizon:[.23,.32,.49],fog:[.13,.22,.33],light:[.42,.58,.86],night:1},
+  {name:'DAWN',clock:'06:12', sun:[.63,.15,.76],sky:[.35,.58,.69],horizon:[.98,.72,.57],fog:[.77,.73,.64],light:[1.23,1.1,1.02],night:.1},
+  {name:'DAY',clock:'12:40', sun:[-.49,.67,.51],sky:[.20,.52,.73],horizon:[.74,.86,.87],fog:[.67,.78,.78],light:[1.13,1.19,1.19],night:0}
+];
+let timeSlot=0, env=structuredClone(slots[0]);
+const pos={x:118,y:54,z:-165,yaw:-.46,pitch:-.105}, keys=new Set();
+let started=false, flying=true, riding=false, target=-1, near=-1, toastTimer, drag=null, audio=null;
+let vx=0,vy=0,vz=0;
+const land=[], solid=[], plan=[];
+let mesh=[];
+function point(p,c,m){mesh.push(p[0],p[1],p[2],c[0],c[1],c[2],m);}
+function tri(a,b,c,t,m=0){point(a,t,m);point(b,t,m);point(c,t,m);}
+function quad(a,b,c,d,t,m=0){tri(a,b,c,t,m);tri(a,c,d,t,m);}
+function box(x,y,z,w,h,d,c,mat=0,wall=mat){
+  const a=x-w/2,b=x+w/2,n=z-d/2,s=z+d/2,t=y+h;
+  quad([a,t,n],[a,t,s],[b,t,s],[b,t,n],scale(c,1.12),mat);
+  quad([a,y,n],[a,t,n],[b,t,n],[b,y,n],scale(c,.88),wall);
+  quad([b,y,s],[b,t,s],[a,t,s],[a,y,s],scale(c,.61),wall);
+  quad([a,y,s],[a,t,s],[a,t,n],[a,y,n],scale(c,1.04),wall);
+  quad([b,y,n],[b,t,n],[b,t,s],[b,y,s],scale(c,.68),wall);
+  quad([a,y,n],[b,y,n],[b,y,s],[a,y,s],scale(c,.5),mat);
+}
+function prism(x,y,z,r,h,rt,c,n=8,angle=0,mat=0){
+  for(let i=0;i<n;i++){
+    const a=angle+i*TAU/n,b=a+TAU/n;
+    const p=[x+Math.cos(a)*r,y,z+Math.sin(a)*r],q=[x+Math.cos(b)*r,y,z+Math.sin(b)*r];
+    const u=[x+Math.cos(a)*rt,y+h,z+Math.sin(a)*rt],v=[x+Math.cos(b)*rt,y+h,z+Math.sin(b)*rt];
+    quad(p,q,v,u,scale(c,.73+.26*Math.cos(a+2.1)),mat);
+    tri([x,y+h,z],u,v,scale(c,1.13),mat);
+  }
+}
+function beam(a,b,width,c,mat=0){
+  const dx=b[0]-a[0],dz=b[2]-a[2], length=Math.hypot(dx,dz)||1;
+  const ix=-dz/length*width/2, iz=dx/length*width/2;
+  const side=(p,s,h)=>[p[0]+ix*s,p[1]+h,p[2]+iz*s];
+  quad(side(a,-1,0),side(a,1,0),side(b,1,0),side(b,-1,0),c,mat);
+  const drop=-width*.52;
+  quad(side(a,-1,0),side(a,-1,drop),side(b,-1,drop),side(b,-1,0),scale(c,.58),mat);
+  quad(side(a,1,0),side(a,1,drop),side(b,1,drop),side(b,1,0),scale(c,.8),mat);
+}
+const stone=color('849389'), deck=color('b5b4a0'), road=color('364952'), rail=color('b9cab9'), glow=color('b9ffcd'), amber=color('ffc37b');
+function platform(x,z,w,d,h,c=stone){
+  box(x,-2,z,w,h+2,d,c);
+  land.push({x,z,w,d,h});
+  box(x,h-.43,z,w+.4,.22,d+.4,scale(c,.62));
+}
+function border(x,z,w,d,y,c){
+  box(x,y,z-d/2,w,.22,.25,c);box(x,y,z+d/2,w,.22,.25,c);
+  box(x-w/2,y,z,.25,.22,d,c);box(x+w/2,y,z,.25,.22,d,c);
+}
+function tree(x,y,z,h=4){
+  const c=pick([color('558358'),color('418264'),color('72924f'),color('3d6e5b')]);
+  prism(x,y,z,h*.058,h*.72,h*.035,color('5c4d3a'),5);
+  prism(x,y+h*.49,z,h*.28,h*.36,h*.18,c,7,rnd());
+  prism(x+.14,y+h*.85,z,h*.18,h*.25,.02,scale(c,1.13),7,rnd());
+}
+function lamp(x,y,z,h=4){
+  box(x,y,z,.12,h,.12,rail); box(x+.26,y+h,z,.7,.10,.25,glow,2);
+}
+function parkbed(x,y,z,w,d){
+  box(x,y,z,w,.44,d,deck);
+  box(x,y+.44,z,w-.4,.07,d-.4,color('537d62'));
+  for(let i=0;i<6;i++) tree(x+(rnd()-.5)*(w-1),y+.5,z+(rnd()-.5)*(d-1),2+rnd()*3);
+}
+function street(x,z,w,d){
+  box(x,4.01,z,w,.025,d,road);
+  const vertical=d>w, len=vertical?d:w;
+  for(let k=-len/2+4;k<len/2-3;k+=7){
+    box(x+(vertical?0:k),4.05,z+(vertical?k:0),vertical?.11:2.9,.012,vertical?2.9:.11,scale(amber,.75));
+  }
+}
+function building(x,z,w,d,h,style){
+  const y=4;
+  const concrete=pick(['abbaad','bcc4af','93aaa4','bfb3a0','a4b9b4'].map(color));
+  const glass=pick(['4c797e','456575','598787','426e72','638683'].map(color));
+  box(x,y,z,w+1,.32,d+1,color('798d82'));
+  if(style===0){
+    box(x,y+.32,z,w,h,d,glass,0,1);
+    box(x,y+h+.32,z,w+.6,.45,d+.6,concrete);
+    for(let i=1;i<=6;i++){
+      const f=i/7-.5;
+      box(x+w*f,y+.4,z-d/2-.1,.12,h,.22,concrete);
+      box(x+w*f,y+.4,z+d/2+.1,.12,h,.22,concrete);
+    }
+  } else if(style===1){
+    const base=h*.57;
+    box(x,y+.32,z,w,base,d,concrete,0,1);
+    box(x+.65,y+.32+base,z,w+.6,.35,d+.7,deck);
+    box(x+1.15,y+.67+base,z,w*.70,h-base,d*.73,glass,0,1);
+    tree(x-w*.33,y+.71+base,z+d*.36,2.1);
+  } else {
+    box(x,y+.32,z,w,h,d,concrete,0,1);
+    for(let i=5.7;i<h-1;i+=5.7){
+      box(x,y+i,z,w+.7,.22,d+.7,scale(concrete,.93));
+    }
+    box(x,y+h+.33,z,w+.45,.3,d+.45,deck);
+  }
+  border(x,z,w*.62,d*.62,y+h+.74,color('63796e'));
+  box(x,y+h+.62,z,w*.31,1.1,d*.25,scale(concrete,.8));
+  if(style===1&&h>20){
+    box(x-w*.19,y+h+.65,z-d*.17,w*.28,.19,d*.46,color('6f9164'));
+    tree(x-w*.19,y+h+.84,z-d*.15,1.75);
+  } else if(style===0&&h>24)solar(x,y+h+.67,z+d*.16,w*.54,1.8);
+  if(h>29)box(x,y+h+.72,z+d*.27,w*.55,.13,.26,glow,2);
+  solid.push({x,z,w: w+.15,d:d+.15,h:y+h+.75});plan.push({x,z,w,d});
+}
+function bridge(x,z,w,d,y=4){
+  platform(x,z,w,d,y,deck);
+  const along=d>w;
+  for(const sign of [-1,1]){
+    const xx=x+sign*(along?w/2-.3:0),zz=z+sign*(along?0:d/2-.3);
+    box(xx,y+.75,zz,along?.17:w,.12,along?d:.17,rail);
+    for(let k=-(along?d:w)/2+2;k<(along?d:w)/2;k+=4.8)
+      box(xx+(along?0:k),y,zz+(along?k:0),.11,.84,.11,rail);
+  }
+}
+function solar(x,y,z,w=4,d=2.6){
+  box(x,y,z-.5,.12,1.15,.12,rail);box(x,y,z+.5,.12,.7,.12,rail);
+  const a=x-w/2,b=x+w/2,n=z-d/2,s=z+d/2;
+  quad([a,y+1.31,n],[a,y+.67,s],[b,y+.67,s],[b,y+1.31,n],color('295674'),4);
+  beam([a,y+1.33,n],[b,y+1.33,n],.07,rail);
+}
+function construct(){
+  // Continuous ground and street grid on the main harbor island.
+  platform(0,59,170,310,4,stone);
+  for(let x=-72;x<=72;x+=36)street(x,59,8.4,300);
+  for(let z=-83;z<=202;z+=36)street(0,z,164,7.4);
+  for(let x=-54;x<=54;x+=36)for(let z=-65;z<205;z+=36){
+    if((z>=7&&z<=79&&Math.abs(x)<20)||(z>=115&&z<=151&&Math.abs(x)<20))continue;
+    for(const dx of [-6.1,6.1])for(const dz of [-6.5,6.5]){
+      const height=6+rnd()*12+Math.max(0,1-Math.abs(x)/79)*(6+rnd()*30)+(z>26&&z<174?rnd()*23:0);
+      if((x===-18&&dx>0)||rnd()<.15)parkbed(x+dx,4.08,z+dz,9,10);
+      else building(x+dx,z+dz,7+rnd()*3,7+rnd()*4,height,Math.floor(rnd()*3));
+    }
+  }
+  for(let z=-85;z<211;z+=10){
+    lamp(-5.1,4.04,z);lamp(5.1,4.04,z+4);
+    if(z%20===15){tree(-8.5,4.04,z,3.1);tree(8.5,4.04,z+1.5,3.7);}
+  }
+  for(const x of [-82,82])for(let z=-88;z<210;z+=8){
+    if(z%16===0)lamp(x,4,z,3);else tree(x,4,z,2.4+rnd()*2);
+  }
+  bridge(0,-111,12,33);
+  platform(0,-135,34,21,4.5,deck);
+  border(0,-135,32,19,4.53,rail);
+  for(const x of [-14,14]){lamp(x,4.5,-142,4.5);lamp(x,4.5,-128,4.5);parkbed(x,4.5,-135,3,5);}
+  for(let z=-133;z<=-98;z+=3)box(0,4.52,z,.16,.04,1.5,glow,2);
+  // The eastern seawall doubles as a continuous public boardwalk.
+  platform(86.5,55,6,288,4,color('b6ab89'));
+  for(let z=-87;z<197;z+=5){
+    if(z>90&&z<102)continue;
+    box(89.38,4,z,.17,1.06,.17,rail);
+    box(89.38,5.02,z+2.2,.16,.12,4.8,rail);
+    if(z%15===3)lamp(87.7,4,z,3.5);
+    if(z%20===13){
+      box(85.5,4.29,z,.56,.14,2.1,color('806f57'));
+      for(const dz of [-.77,.77])box(85.5,4,z+dz,.41,.31,.16,rail);
+    }
+  }
+  for(const z of [-51,0,155]){
+    bridge(96,z,13,4,4);
+    for(const dz of [-1.45,1.45])lamp(101,4,z+dz,2.2);
+  }
+  // A terraced tidal park, stepped wetland basins, and greenhouse roofs.
+  platform(-137,31,69,111,4,color('657b68'));
+  platform(-154,57,27,37,5.2,color('6b8666'));
+  platform(-153,61,21,27,6.4,color('7c9069'));
+  bridge(-96,25,31,9);
+  bridge(-99,-13,33,6);
+  for(let i=0;i<24;i++){
+    const x=-166+rnd()*58,z=-20+rnd()*102;
+    if(Math.abs(x+132)<6|| (x<-138&&z>37&&z<77))continue;
+    parkbed(x,4.02,z,4+rnd()*6,5+rnd()*5);
+  }
+  box(-132,4.01,28,4,.05,100,deck);
+  for(let z=-18;z<84;z+=8)lamp(-129,4,z,2.6);
+  for(let i=0;i<4;i++){
+    const z=25+i*14;
+    box(-183,-1,z,20,2.15,10,color('668461'));
+    for(let k=0;k<6;k++)prism(-191+rnd()*17,1.15,z+(rnd()-.5)*8,.35,1+rnd()*1.7,.04,color('759b63'),4);
+  }
+  for(const z of [39,52,65]){
+    box(-115,4,z,10,2.9,8,color('729c8e'),0,4);
+    prism(-115,6.9,z,6,2,4,color('a4ccba'),4,Math.PI/4,4);
+  }
+  // Elevated Silkline and its canopied exchange.
+  for(let z=-63;z<210;z+=14){
+    box(-9.8,4,z,.86,6.3,.86,deck);
+    box(-9.8,9.8,z,5.7,.5,1.2,deck);
+  }
+  box(-9.8,10.25,70,5.15,.63,285,color('707f7c'));
+  for(const x of [-11.31,-10.34,-9.26,-8.29])box(x,10.88,70,.11,.09,284,rail);
+  for(const x of [-12.37,-7.2])box(x,10.80,70,.15,.15,285,glow,2);
+  box(-15.3,10.28,48,5.7,.67,30,deck);
+  for(const z of [35,48,61]){
+    for(const x of [-18,-13])box(x,10.9,z,.23,4.4,.23,rail);
+    beam([-18.7,15.3,z],[-11.7,15.3,z],.35,rail);
+  }
+  box(-15.4,15.27,48,7.6,.22,31,color('507d80'),4);
+  box(-15.4,15.48,32.5,7.6,.16,.18,glow,2);
+  for(let i=0;i<15;i++)box(-15.2,4+i*.44,31.4-i*.4,3.25,.46,.44,deck);
+  for(let i=0;i<4;i++){parkbed(10,4.03,36+i*7,6,5);parkbed(17,4.03,36+i*7,5,5);}
+  // The spire's ribbed, tapering silhouette and suspended garden.
+  for(const [r,h] of [[13,.45],[11,1],[9.5,1]])prism(0,4+(13-r)*.62,143,r,h,r,deck,8);
+  prism(0,4,143,6.8,8,6.1,color('708980'),10);
+  prism(0,12,143,6.2,66,3.3,color('538c91'),10,0,1);
+  prism(0,78,143,3.4,19,.84,color('93b6ad'),10,0,1);
+  prism(0,97,143,.4,9,.06,glow,6,0,2);
+  for(let i=0;i<10;i++){
+    const a=i*TAU/10, x=Math.cos(a), z=Math.sin(a);
+    beam([x*6.38,12,143+z*6.38],[x*3.34,78,143+z*3.34],.25,deck);
+    beam([x*3.45,78,143+z*3.45],[x*.88,97,143+z*.88],.21,glow,2);
+  }
+  for(const y of [14,31,52,76,79])prism(0,y,143,7.05-(y-12)*.044,.32,7.05-(y-12)*.044,glow,10,0,2);
+  prism(0,32,143,9.1,1,9.1,color('8faaa1'),12);
+  prism(0,33,143,8.9,.17,8.9,color('618463'),12);
+  for(let i=0;i<12;i++){const a=i*TAU/12;tree(Math.cos(a)*7.25,33.17,143+Math.sin(a)*7.25,1.45+rnd());}
+  solid.push({x:0,z:143,w:13,d:13,h:106});plan.push({x:0,z:143,w:13,d:13});
+  // Offshore service quay and floating cultivation grids.
+  bridge(105,96,43,8);
+  platform(149,96,46,58,4,color('849281'));
+  for(const x of [133,164])for(const z of [77,88,101,112]){
+    solar(x,4,z,9,3);
+    lamp(x+5,4,z,2.8);
+  }
+  for(let j=0;j<3;j++)for(let i=0;i<4;i++){
+    const x=188+i*16,z=72+j*21;
+    border(x,z,12,16,.72,color('b9a47b'));
+    for(const dx of [-5.8,5.8])for(const dz of [-7.8,7.8])prism(x+dx,.37,z+dz,.53,.55,.48,amber,8);
+    for(let k=-5;k<=5;k+=2)box(x+k,.14,z,.09,.08,15,color('526e50'));
+  }
+  for(let i=0;i<7;i++){
+    const x=191+i*41,z=202+Math.sin(i*1.6)*32;
+    prism(x,-2,z,4,4,3.6,color('778986'),10);
+    prism(x,2,z,.7,28,.36,color('c5c9b6'),8);
+    box(x,29.4,z,1.8,1.3,1.6,deck);
+  }
+  // Layered ridgelines, with open water between the foreground headlands.
+  for(let row=0;row<3;row++){
+    const ridge=[],slope=[],shore=[];
+    const tone=color(['456361','536e73','627a80'][row]);
+    for(let i=0;i<65;i++){
+      const x=(i-32)*37+row*33, z=470+row*180+Math.sin(i*.28+row)*66;
+      const amplitude=46+Math.sin(i*.36+row*1.5)*24+Math.cos(i*.18-row)*15;
+      const height=(amplitude+rnd()*24+row*22)*(row===0?.3+.7*Math.min(1,Math.abs(x-40)/370):1);
+      ridge.push([x,height,z+rnd()*24]);
+      slope.push([x+(rnd()-.5)*24,height*(.26+rnd()*.26),z-55-rnd()*39]);
+      shore.push([x,-3,z-121-rnd()*35]);
+    }
+    for(let i=0;i<ridge.length-1;i++){
+      tri(ridge[i],slope[i],ridge[i+1],scale(tone,.81+rnd()*.23));
+      tri(ridge[i+1],slope[i],slope[i+1],scale(tone,.86+rnd()*.21));
+      tri(slope[i],shore[i],slope[i+1],scale(tone,.78+rnd()*.17));
+      tri(slope[i+1],shore[i],shore[i+1],scale(tone,.80+rnd()*.21));
+    }
+  }
+}
+const skyVert = `
+attribute vec2 aClip;
+varying vec2 vClip;
+void main(){vClip=aClip;gl_Position=vec4(aClip,1.,1.);}
+`;
+const skyFrag = `
+precision highp float;
+varying vec2 vClip;
+uniform vec3 uRight,uUp,uForward,uSun,uSky,uHorizon;
+uniform vec2 uLens;
+uniform float uNight,uTime;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){
+  vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);
+}
+void main(){
+  vec3 ray=normalize(uForward+uRight*vClip.x/uLens.x+uUp*vClip.y/uLens.y);
+  float alt=max(ray.y,0.), s=max(dot(ray,uSun),0.);
+  vec3 sky=mix(uHorizon,uSky,pow(clamp(alt*1.35,0.,1.),.43));
+  if(uNight>.6){
+    vec2 p=vec2(atan(ray.x,ray.z)*195.,alt*280.);
+    float star=step(.991,hash(floor(p)))*(1.-smoothstep(.02,.26,length(fract(p)-.5)));
+    sky+=vec3(.76,.89,1.)*star*smoothstep(.035,.25,alt);
+    sky+=vec3(.46,.63,.75)*(pow(s,75.)*.10+smoothstep(.99978,.99988,s)*.8);
+  }else{
+    sky+=vec3(.94,.49,.21)*(pow(s,16.)*.38+pow(s,130.)*.44);
+    sky=mix(sky,vec3(1.,.97,.78),smoothstep(.99960,.99974,s));
+  }
+  if(alt>.014){
+    vec2 uv=ray.xz/(alt+.115)*vec2(1.55,6.8)+vec2(uTime*.012,0.);
+    float f=.58*noise(uv)+.26*noise(uv*2.1)+.11*noise(uv*4.5)+.05*noise(uv*9.);
+    float cloud=smoothstep(.49,.75,f)*smoothstep(.014,.12,alt);
+    sky=mix(sky,mix(uHorizon*.63+vec3(.13,.09,.04),vec3(.98,.78,.58),pow(s,7.))*(1.-uNight*.62),cloud*.66);
+  }
+  gl_FragColor=vec4(sky,1.);
+}
+`;
+const worldVert = `
+attribute vec3 aPosition,aColor;
+attribute float aMaterial;
+uniform vec3 uEye,uRight,uUp,uForward,uOffset;
+uniform vec2 uLens;
+uniform float uYaw,uRoll;
+varying vec3 vPos,vColor;
+varying float vMat;
+void main(){
+  vec3 p=aPosition;
+  p.xy=mat2(cos(uRoll),sin(uRoll),-sin(uRoll),cos(uRoll))*p.xy;
+  p.xz=mat2(cos(uYaw),-sin(uYaw),sin(uYaw),cos(uYaw))*p.xz;
+  vPos=p+uOffset;vColor=aColor;vMat=aMaterial;
+  vec3 d=vPos-uEye;
+  float z=dot(d,uForward);
+  gl_Position=vec4(dot(d,uRight)*uLens.x,dot(d,uUp)*uLens.y,z*1.000084-.180008,z);
+}
+`;
+const worldFrag = `
+precision highp float;
+varying vec3 vPos,vColor;
+varying float vMat;
+uniform vec3 uEye,uSun,uFog,uLight,uSky,uHorizon;
+uniform float uTime,uNight;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+void main(){
+  vec3 c=vColor*uLight;
+  vec3 fromEye=vPos-uEye;
+  float dist=length(fromEye);
+  if(vMat>.5&&vMat<1.5){
+    vec2 p=vec2((vPos.x+vPos.z)*.57,vPos.y*.36);
+    vec2 f=fract(p);
+    float window=smoothstep(.08,.15,f.x)*(1.-smoothstep(.85,.93,f.x))*smoothstep(.15,.22,f.y)*(1.-smoothstep(.75,.83,f.y));
+    float lit=step(.58,hash(floor(p)));
+    window*=1.-smoothstep(335.,620.,dist);
+    vec3 glass=c*.56+uSky*.24+pow(max(0.,1.-abs(normalize(fromEye).z)),4.)*uHorizon*.18;
+    glass=mix(glass,vec3(1.,.68,.34)*(.48+uNight*.57),lit*max(uNight,.28));
+    c=mix(c,glass,window*.91);
+  }
+  if(vMat>1.5&&vMat<2.5)c=mix(c,vColor*1.22,.76)+vColor*uNight*.18;
+  if(vMat>2.5&&vMat<3.5){
+    vec2 p=vPos.xz; float t=uTime;
+    float w=sin(dot(p,vec2(.21,.39))+t*1.4)+.45*sin(dot(p,vec2(-.64,.26))-t*1.9);
+    float w2=sin(dot(p,vec2(.58,-.91))+t*2.2)+.35*sin(dot(p,vec2(.81,.72))+t);
+    vec3 n=normalize(vec3(w*.058+w2*.04,1.,w2*.09+w*.072));
+    vec3 ray=normalize(fromEye);
+    float fres=pow(1.-max(dot(n,-ray),0.),3.);
+    vec3 reflected=reflect(ray,n);
+    float g=pow(max(dot(reflected,uSun),0.),19.);
+    float glint=pow(max(dot(reflected,uSun),0.),138.);
+    vec3 deep=vec3(.065,.27,.29)*uLight;
+    c=mix(deep+vec3(.018,.031,.025)*w,mix(uSky,uHorizon,.68),fres*.60);
+    c+=vec3(1.,.61,.29)*(g*.22+glint*.62)*(1.-uNight*.91);
+    float ripples=smoothstep(1.18,1.4,w+.18*w2)*.052*(1.-smoothstep(130.,500.,dist));
+    c+=ripples*(1.-uNight*.7);
+    float coast=min(length(max(abs(p-vec2(0.,59.))-vec2(85.,155.),0.)),
+      min(length(max(abs(p-vec2(-137.,31.))-vec2(34.5,55.5),0.)),
+      length(max(abs(p-vec2(149.,96.))-vec2(23.,29.),0.))));
+    c+=vec3(.15,.26,.22)*(1.-smoothstep(.1,2.65,coast))*smoothstep(.25,.90,sin(coast*3.-t*1.7+w));
+    c+=vec3(.022,.036,.03)*(1.-smoothstep(0.,23.,coast));
+  }
+  if(vMat>3.5){
+    vec2 f=fract(vPos.xz*vec2(1.25,1.6));
+    float seam=step(.95,f.x)+step(.965,f.y);
+    c=mix(c,uSky*.58+uHorizon*.22,.33)+min(1.,seam)*.075;
+  }
+  float fog=1.-exp(-pow(dist*(.0021+uNight*.00038),1.42));
+  gl_FragColor=vec4(mix(c,uFog,fog*.92),1.);
+}
+`;
+function shader(type,src){
+  const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(v,f){
+  const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,v));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));
+  return {p,u:Object.fromEntries(Array.from({length:gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS)},(_,i)=>{
+    const {name}=gl.getActiveUniform(p,i);return [name,gl.getUniformLocation(p,name)];
+  }))};
+}
+function buffer(arr,stride){
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW);
+  return {b,n:arr.length/stride};
+}
+function storeMesh(){const b=buffer(mesh,7);mesh=[];return b;}
+let scene,sea,screen,trains,ferry,rotor,drone,sky,world,attrib;
+function setup(){
+  sky=program(skyVert,skyFrag);world=program(worldVert,worldFrag);
+  attrib=['aPosition','aColor','aMaterial'].map(a=>gl.getAttribLocation(world.p,a));
+  screen=buffer([-1,-1,1,-1,-1,1,1,1],2);
+  construct();scene=storeMesh();
+  quad([-2000,0,-2000],[-2000,0,2000],[2000,0,2000],[2000,0,-2000],stone,3);
+  sea=storeMesh();
+  for(let i=0;i<3;i++){
+    const z=i*7.35-7.35;
+    box(0,0,z,1.65,1.48,6.9,color('dde1ce'));
+    box(0,.36,z,1.72,.15,6.94,color('3df2b9'),2);
+    box(0,.71,z,1.68,.54,6.84,color('3a6874'),0,1);
+    box(0,1.49,z,1.55,.19,6.57,color('a8ccc2'));
+    for(const k of [-2,0,2])box(0,.66,z+k,1.72,.65,.10,color('c0d5c6'));
+    box(0,.45,z+3.46,1.24,.23,.08,glow,2);
+  }
+  trains=storeMesh();
+  box(0,.02,0,3.6,.82,9,color('d5c7a0'));
+  box(0,.86,-.45,2.55,1.22,5.9,color('70a497'),0,1);
+  box(0,2.09,-.45,2.7,.15,6.02,deck);
+  box(0,.5,0,3.68,.11,8.7,amber,2);
+  prism(0,.05,4.4,1.8,.8,1.18,deck,5,Math.PI/2);
+  ferry=storeMesh();
+  for(let i=0;i<3;i++){
+    const a=i*TAU/3;
+    const blade=(r,s,z)=>[Math.cos(a)*r-Math.sin(a)*s,Math.sin(a)*r+Math.cos(a)*s,z];
+    quad(blade(.35,-.21,0),blade(4.3,-.54,0),blade(12.3,-.08,0),blade(4.2,.40,0),color('c5d5c9'));
+    tri(blade(10.7,-.17,-.02),blade(12.37,-.08,-.02),blade(10.6,.10,-.02),amber);
+  }
+  prism(0,-.45,0,.64,.9,.64,deck,9);rotor=storeMesh();
+  box(0,0,0,1.32,.37,1.02,color('b8ccc6'));
+  for(const x of [-.84,.84])for(const z of [-.7,.7]){
+    beam([0,.29,0],[x,.29,z],.12,rail);
+    box(x,.17,z,.33,.21,.31,color('546b6b'));
+    box(x,.12,z,.26,.07,.25,x<0?amber:glow,2);
+  }
+  drone=storeMesh();
+}
+function camera(){
+  const sy=Math.sin(pos.yaw),cy=Math.cos(pos.yaw),sp=Math.sin(pos.pitch),cp=Math.cos(pos.pitch);
+  const aspect=innerWidth/innerHeight;
+  const focal=1/Math.tan((aspect<.85?67:58)*rad/2);
+  return {right:[cy,0,-sy],up:[-sy*sp,cp,-cy*sp],forward:[sy*cp,sp,cy*cp],lens:[focal/aspect,focal]};
+}
+const vector=(u,name,val)=>gl.uniform3fv(u[name],val);
+function bindCommon(uni,cam,t){
+  vector(uni,'uRight',cam.right);vector(uni,'uUp',cam.up);vector(uni,'uForward',cam.forward);
+  gl.uniform2fv(uni.uLens,cam.lens);
+  vector(uni,'uSun',env.sun);vector(uni,'uSky',env.sky);vector(uni,'uHorizon',env.horizon);
+  gl.uniform1f(uni.uTime,t);gl.uniform1f(uni.uNight,env.night);
+}
+function paint({b,n},x=0,y=0,z=0,yaw=0,roll=0){
+  gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  for(let i=0;i<3;i++){
+    gl.enableVertexAttribArray(attrib[i]);
+    gl.vertexAttribPointer(attrib[i],i===2?1:3,gl.FLOAT,false,28,i*12);
+  }
+  gl.uniform3f(world.u.uOffset,x,y,z);gl.uniform1f(world.u.uYaw,yaw);gl.uniform1f(world.u.uRoll,roll);
+  gl.drawArrays(gl.TRIANGLES,0,n);
+}
+function trainPose(t){
+  const distance=(t*13+49)%544;
+  return {z:-61+(distance<=272?distance:544-distance),direction:distance<272?1:-1};
+}
+function render(t,cam){
+  const density=Math.min(devicePixelRatio||1,1.5,Math.sqrt(2100000/(innerWidth*innerHeight)));
+  const w=Math.round(innerWidth*density),h=Math.round(innerHeight*density);
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+  gl.viewport(0,0,w,h);
+  gl.disable(gl.DEPTH_TEST);gl.clear(gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(sky.p);bindCommon(sky.u,cam,t);
+  const clip=gl.getAttribLocation(sky.p,'aClip');
+  gl.bindBuffer(gl.ARRAY_BUFFER,screen.b);gl.enableVertexAttribArray(clip);gl.vertexAttribPointer(clip,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  gl.enable(gl.DEPTH_TEST);gl.useProgram(world.p);bindCommon(world.u,cam,t);
+  gl.uniform3f(world.u.uEye,pos.x,pos.y,pos.z);vector(world.u,'uFog',env.fog);vector(world.u,'uLight',env.light);
+  paint(sea);paint(scene);
+  const aTrain=trainPose(t),bTrain=trainPose(t+16.3);
+  paint(trains,-10.82,11,aTrain.z,aTrain.direction>0?0:Math.PI);
+  paint(trains,-8.78,11,150-bTrain.z,bTrain.direction>0?Math.PI:0);
+  for(let i=0;i<3;i++){
+    const a=t*.043+i*TAU/3;
+    paint(ferry,145+Math.sin(a)*47,.09*Math.sin(t*2+i),42+Math.cos(a)*88,Math.atan2(Math.cos(a)*47,-Math.sin(a)*88));
+  }
+  for(let i=0;i<7;i++)paint(rotor,191+i*41,30,201+Math.sin(i*1.6)*32,0,t*(.93+i*.052)+i);
+  for(let i=0;i<9;i++){
+    const a=t*(.13+i*.006)+i*2.41;
+    paint(drone,Math.cos(a)*(43+i*5),19+i*4+Math.sin(t*.4+i)*1.8,76+Math.sin(a)*(65+i*3),-a);
+  }
+}
+const panel=$('panel'), map=$('map'), ctx=map.getContext('2d');
+const mapX=x=>10+(x+198)*.49, mapZ=z=>179-(z+151)*.457;
+const mapLayer=document.createElement('canvas');
+mapLayer.width=map.width;mapLayer.height=map.height;
+function buildMap(){
+  const m=mapLayer.getContext('2d');
+  m.fillStyle='#112e36';m.fillRect(0,0,map.width,map.height);
+  m.strokeStyle='#50798450';m.lineWidth=.6;
+  for(let x=10;x<map.width;x+=16){m.beginPath();m.moveTo(x,0);m.lineTo(x,map.height);m.stroke();}
+  for(let y=6;y<map.height;y+=16){m.beginPath();m.moveTo(0,y);m.lineTo(map.width,y);m.stroke();}
+  const rect=(x,z,w,d)=>m.fillRect(mapX(x-w/2),mapZ(z+d/2),w*.49,d*.457);
+  m.fillStyle='#48736d';
+  for(const l of land)rect(l.x,l.z,l.w,l.d);
+  m.fillStyle='#88a394';
+  for(const b of plan)rect(b.x,b.z,b.w,b.d);
+  m.fillStyle='#809a68';
+  for(let j=0;j<3;j++)for(let i=0;i<4;i++)rect(188+i*16,72+j*21,10,14);
+  m.strokeStyle='#b9f9bc90';m.setLineDash([3,2]);m.beginPath();
+  m.moveTo(mapX(-9.8),mapZ(-66));m.lineTo(mapX(-9.8),mapZ(210));m.stroke();
+}
+function refreshMap(){
+  ctx.drawImage(mapLayer,0,0);
+  if(target>=0){
+    const l=landmarks[target];ctx.strokeStyle='#d4ff9ab8';ctx.setLineDash([3,4]);ctx.beginPath();
+    ctx.moveTo(mapX(pos.x),mapZ(pos.z));ctx.lineTo(mapX(l.x),mapZ(l.z));ctx.stroke();ctx.setLineDash([]);
+  }
+  for(const [i,l] of landmarks.entries()){
+    ctx.save();ctx.translate(mapX(l.x),mapZ(l.z));ctx.rotate(Math.PI/4);
+    ctx.lineWidth=1;ctx.strokeStyle=i===target?'#dbffa9':'#e5f2d8';ctx.strokeRect(-3.3,-3.3,6.6,6.6);
+    if(visited.has(i)||target===i){ctx.fillStyle='#c9ff9d';ctx.fillRect(-2,-2,4,4);}ctx.restore();
+  }
+  ctx.save();ctx.translate(clamp(mapX(pos.x),5,map.width-5),clamp(mapZ(pos.z),6,map.height-6));ctx.rotate(pos.yaw);
+  ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(4,4);ctx.lineTo(0,2);ctx.lineTo(-4,4);ctx.closePath();
+  ctx.fillStyle='#fff2cb';ctx.shadowColor='#092426';ctx.shadowBlur=5;ctx.fill();ctx.restore();
+}
+function say(message){
+  $('toast').textContent=message;$('toast').hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3200);
+}
+function uiCount(){$('surveys').textContent=visited.size+' / '+landmarks.length+' LOGGED';}
+function zeroMotion(){vx=vy=vz=0;keys.clear();}
+function enter(){
+  if(started||!scene)return;
+  if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
+  started=true;document.body.classList.add('play');$('intro').hidden=true;
+  for(const id of ['bearing','loc','cross'])$(id).hidden=false;
+  if(target<0)target=0;
+  say(matchMedia('(pointer:coarse)').matches?'Drag to look · use the arrows to move':'WASD to move · drag to look · M for atlas');
+}
+function showPanel(tag,title){
+  if(document.pointerLockElement===canvas)document.exitPointerLock();
+  zeroMotion();drag=null;
+  $('panelTag').textContent=tag;$('panelTitle').textContent=title;
+  $('panelBody').replaceChildren();if(!panel.open)panel.showModal();
+  return $('panelBody');
+}
+function paragraph(parent,text){
+  const p=document.createElement('p');p.textContent=text;parent.append(p);
+}
+function routeTo(i){
+  if(!scene){paragraph(showPanel('District · '+landmarks[i].type,landmarks[i].name),landmarks[i].entry);return;}
+  if(panel.open)panel.close();
+  enter();zeroMotion();
+  [pos.x,pos.y,pos.z,pos.yaw,pos.pitch]=landmarks[i].view;
+  flying=true;riding=false;target=i;say('Arrived at '+landmarks[i].name);
+}
+function atlas(){
+  const body=showPanel('District atlas','Meridian Bay');
+  paragraph(body,'Jump to a district overlook, then follow the diamond to read its field note. Tap a diamond on the minimap to track it from where you are.');
+  const routes=document.createElement('div');routes.className='routes';
+  landmarks.forEach((l,i)=>{
+    const button=document.createElement('button');button.className='route';
+    const num=document.createElement('span');num.className='num';num.textContent=visited.has(i)?'✓':'0'+(i+1);
+    const type=document.createElement('small');type.textContent=l.type+' ↗';
+    button.append(num,document.createTextNode(l.name),type);routes.append(button);
+    button.onclick=()=>routeTo(i);
+  });body.append(routes);
+}
+function help(){
+  const body=showPanel('Explorer controls','Find your way');
+  paragraph(body,'Fly anywhere around the bay or descend to the streets and cross the bridges on foot. The atlas takes you to any district.');
+  const grid=document.createElement('div');grid.className='controls';
+  const touch=matchMedia('(pointer:coarse)').matches;
+  for(const [action,binding] of [
+    ['Move',touch?'Arrow pad':'W A S D / ↑ ↓'],
+    ['Look',touch?'Drag':'Drag / ← → / PgUp PgDn'],
+    ['Capture mouse',touch?'':'L · Esc to release'],
+    ['Rise / descend',touch?'＋ / −':'Space / C'],
+    ['Boost','Shift'],['Switch flight or walk',touch?'Mode label':'F'],['Read nearby field note',touch?'Tap prompt':'E'],
+    ['Open atlas','M'],['Cycle daylight','T']
+  ]){
+    if(touch&&(action==='Boost'||action==='Capture mouse'))continue;
+    const word=document.createElement('span'),key=document.createElement('kbd');
+    word.textContent=action;key.textContent=binding;grid.append(word,key);
+  }
+  body.append(grid);
+}
+function readNote(i){
+  if(i<0)return;
+  const l=landmarks[i];visited.add(i);
+  try{localStorage.setItem('meridian2030.log',JSON.stringify([...visited]));}catch{}
+  uiCount();if(target===i)target=-1;
+  paragraph(showPanel('Field note · '+l.type,l.name),l.entry);
+  if(i===2){
+    const ride=document.createElement('button');ride.className='primary';ride.textContent='Ride the Silkline ↗';
+    ride.onclick=()=>{
+      panel.close();zeroMotion();riding=true;flying=true;target=-1;
+      pos.yaw=trainPose(clockTime).direction>0?0:Math.PI;pos.pitch=-.07;
+      say('Silkline observation car · F to exit');
+    };
+    $('panelBody').append(ride);
+  }
+  if(visited.size===landmarks.length)paragraph($('panelBody'),'All five districts logged. The bay is yours to explore.');
+}
+function surface(x,z){
+  let h=-Infinity;
+  for(const p of land)if(Math.abs(x-p.x)<=p.w/2&&Math.abs(z-p.z)<=p.d/2)h=Math.max(h,p.h);
+  return h;
+}
+function blocked(x,y,z){
+  return solid.some(b=>Math.abs(x-b.x)<b.w/2+.38&&Math.abs(z-b.z)<b.d/2+.38&&y<b.h+.36);
+}
+function toggleMode(){
+  enter();
+  if(riding){riding=false;pos.y+=1.3;zeroMotion();say('Flight mode');return;}
+  if(!flying){flying=true;pos.y+=.8;say('Flight mode');return;}
+  const h=surface(pos.x,pos.z);
+  if(!Number.isFinite(h)||blocked(pos.x,h+1.73,pos.z)){
+    say('Fly over a street, bridge or clear deck to land.');return;
+  }
+  flying=false;pos.y=h+1.73;vy=0;say('Walking mode');
+}
+function cycleLight(){
+  timeSlot=(timeSlot+1)%slots.length;
+  $('light').textContent=slots[timeSlot].name;$('clock').textContent=slots[timeSlot].clock+' LOCAL';
+}
+async function toggleSound(){
+  try{
+    if(!audio){
+      const Audio=window.AudioContext||window.webkitAudioContext;
+      if(!Audio){say('Audio is unavailable in this browser.');return;}
+      audio=new Audio();
+      const output=audio.createGain();output.gain.value=.14;output.connect(audio.destination);
+      const waves=audio.createBuffer(1,audio.sampleRate*3,audio.sampleRate),data=waves.getChannelData(0);
+      let smooth=0;
+      for(let i=0;i<data.length;i++){smooth=(smooth+(Math.random()*2-1)*.021)/1.021;data[i]=smooth*2.35;}
+      const source=audio.createBufferSource();source.buffer=waves;source.loop=true;
+      const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=440;
+      source.connect(filter);filter.connect(output);source.start();
+      const swell=audio.createOscillator(),w=audio.createGain();swell.frequency.value=.13;w.gain.value=130;
+      swell.connect(w);w.connect(filter.frequency);swell.start();
+      for(const [hz,gain] of [[55,.032],[82.41,.021],[110,.009]]){
+        const note=audio.createOscillator(),level=audio.createGain();level.gain.value=gain;note.frequency.value=hz;
+        note.connect(level);level.connect(output);note.start();
+      }
+      await audio.resume();
+    }else if(audio.state==='running')await audio.suspend();
+    else await audio.resume();
+    const active=audio.state==='running';$('sound').textContent=active?'SOUND ON':'SOUND OFF';$('sound').setAttribute('aria-pressed',String(active));
+  }catch{say('Audio is unavailable in this browser.');}
+}
+$('enter').onclick=enter;$('atlasIntro').onclick=atlas;$('atlas').onclick=atlas;$('help').onclick=help;
+$('light').onclick=cycleLight;$('sound').onclick=toggleSound;$('close').onclick=()=>panel.close();
+$('prompt').onclick=()=>readNote(near);
+map.addEventListener('click',e=>{
+  const bounds=map.getBoundingClientRect(),x=(e.clientX-bounds.left)*map.width/bounds.width,y=(e.clientY-bounds.top)*map.height/bounds.height;
+  const i=landmarks.findIndex(l=>Math.hypot(x-mapX(l.x),y-mapZ(l.z))<14);
+  if(i<0){atlas();return;}
+  enter();target=target===i?-1:i;if(target>=0)say('Tracking '+landmarks[i].name);
+});
+const modeButton=$('mode');modeButton.onclick=toggleMode;modeButton.title='Switch flight or walk (F)';
+const moving=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyC','ShiftLeft','ShiftRight','PageUp','PageDown']);
+window.addEventListener('keydown',e=>{
+  if(panel.open||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.code==='Space'&&e.target instanceof HTMLButtonElement)return;
+  if(moving.has(e.code)){
+    if(!started)return;
+    keys.add(e.code);e.preventDefault();return;
+  }
+  if(e.repeat)return;
+  if(e.code==='KeyM'){e.preventDefault();atlas();}
+  else if(e.code==='KeyT')cycleLight();
+  else if(e.key==='?')help();
+  else if(e.code==='KeyF'&&started)toggleMode();
+  else if(e.code==='KeyE'&&started)readNote(near);
+  else if(e.code==='KeyL'&&started){
+    if(document.pointerLockElement===canvas)document.exitPointerLock();
+    else try{canvas.requestPointerLock()?.catch(()=>say('Use drag to look.'));}catch{say('Use drag to look.');}
+  }
+});
+window.addEventListener('keyup',e=>keys.delete(e.code));
+window.addEventListener('blur',zeroMotion);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)zeroMotion();});
+document.addEventListener('pointerlockerror',()=>say('Use drag to look.'));
+function look(dx,dy){
+  pos.yaw=(pos.yaw+dx*.004)%TAU;pos.pitch=clamp(pos.pitch-dy*.004,-1.47,1.47);
+}
+canvas.addEventListener('pointerdown',e=>{
+  if(!started||panel.open||e.button!==0)return;
+  if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY};
+  canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';
+});
+document.addEventListener('pointermove',e=>{
+  if(!started||panel.open)return;
+  if(document.pointerLockElement===canvas){look(e.movementX,e.movementY);return;}
+  if(drag&&drag.id===e.pointerId){look(e.clientX-drag.x,e.clientY-drag.y);drag.x=e.clientX;drag.y=e.clientY;}
+});
+function clearDrag(e){if(drag?.id===e.pointerId){drag=null;canvas.style.cursor='grab';}}
+for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,clearDrag);
+for(const key of document.querySelectorAll('[data-key]')){
+  key.addEventListener('pointerdown',e=>{e.preventDefault();key.setPointerCapture(e.pointerId);keys.add(key.dataset.key);});
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])key.addEventListener(type,()=>keys.delete(key.dataset.key));
+}
+function movement(dt){
+  const held=(...codes)=>codes.some(c=>keys.has(c));
+  pos.yaw+=dt*1.48*(Number(held('ArrowRight'))-Number(held('ArrowLeft')));
+  pos.pitch=clamp(pos.pitch+dt*(Number(held('PageUp'))-Number(held('PageDown'))),-1.47,1.47);
+  let fw=Number(held('KeyW','ArrowUp'))-Number(held('KeyS','ArrowDown'));
+  let st=Number(held('KeyD'))-Number(held('KeyA'));
+  const mag=Math.max(1,Math.hypot(fw,st));fw/=mag;st/=mag;
+  const speed=(flying?22:7.8)*(held('ShiftLeft','ShiftRight')?2.55:1);
+  const ease=1-Math.exp(-dt*(flying?6.2:13));
+  vx=lerp(vx,(Math.sin(pos.yaw)*fw+Math.cos(pos.yaw)*st)*speed,ease);
+  vz=lerp(vz,(Math.cos(pos.yaw)*fw-Math.sin(pos.yaw)*st)*speed,ease);
+  const rise=Number(held('Space'))-Number(held('KeyC'));
+  vy=lerp(vy,flying?rise*speed*.8:0,ease);
+  const moveAxis=(axis,change)=>{
+    const x=axis==='x'?clamp(pos.x+change,-490,520):pos.x;
+    const z=axis==='z'?clamp(pos.z+change,-388,435):pos.z;
+    const h=surface(x,z);
+    const y=flying?pos.y:h+1.73;
+    if(!flying&&(!Number.isFinite(h)||h>pos.y-.63))return;
+    if(flying&&pos.y<h+.45)return;
+    if(blocked(x,y,z))return;
+    pos.x=x;pos.z=z;
+    if(!flying)pos.y=y;
+  };
+  moveAxis('x',vx*dt);moveAxis('z',vz*dt);
+  if(flying){
+    const y=clamp(pos.y+vy*dt,Math.max(1,surface(pos.x,pos.z)+.47),186);
+    if(!blocked(pos.x,y,pos.z))pos.y=y;
+  }
+}
+function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+function dist(l){return Math.hypot(pos.x-l.x,pos.y-l.y,pos.z-l.z);}
+function updateUI(cam){
+  $('altitude').textContent=Math.round(pos.y)+' M';
+  if(!started)return;
+  modeButton.hidden=false;modeButton.textContent=riding?'EXIT SILKLINE [F]':flying?'FLIGHT [F]':'WALK [F]';
+  const degrees=(Math.round(pos.yaw/rad)%360+360)%360;
+  $('bearing').textContent=['N','NE','E','SE','S','SW','W','NW'][Math.round(degrees/45)%8]+' '+String(degrees).padStart(3,'0')+'°';
+  const closest=landmarks.reduce((last,l,i)=>dist(l)<dist(landmarks[last])?i:last,0);
+  $('zone').textContent=dist(landmarks[closest])<66?landmarks[closest].name:'Meridian Bay';
+  const bearing=target>=0?Math.atan2(landmarks[target].x-pos.x,landmarks[target].z-pos.z)-pos.yaw:0;
+  const directions=['↑','↗','→','↘','↓','↙','←','↖'];
+  const arrow=directions[(Math.round(bearing/(TAU/8))%8+8)%8];
+  $('hint').textContent=target>=0?arrow+' WAYPOINT '+Math.round(dist(landmarks[target]))+' M':matchMedia('(pointer:coarse)').matches?'DRAG TO LOOK':'WASD MOVE · M ATLAS';
+  near=!riding&&dist(landmarks[closest])<18?closest:-1;
+  $('prompt').hidden=near<0||panel.open;
+  if(near>=0)$('prompt').textContent='[ E ]  Read field note · '+landmarks[near].name;
+  const id=target>=0?target:near;
+  const marker=$('marker');marker.hidden=true;
+  if(id>=0&&!panel.open){
+    const l=landmarks[id],v=[l.x-pos.x,l.y+4-pos.y,l.z-pos.z],w=dot(v,cam.forward);
+    if(w>2){
+      const x=dot(v,cam.right)*cam.lens[0]/w,y=dot(v,cam.up)*cam.lens[1]/w;
+      if(Math.abs(x)<.92&&Math.abs(y)<.77){
+        marker.hidden=false;marker.style.left=((1+x)*50)+'%';marker.style.top=((1-y)*50)+'%';
+        marker.textContent=l.name.toUpperCase()+' · '+Math.round(dist(l))+' M';
+      }
+    }
+  }
+}
+let previous=0, clockTime=0, lastRefresh=-1;
+function frame(now){
+  const dt=previous?Math.min(.045,(now-previous)/1000):0;previous=now;clockTime+=dt;
+  if(started&&!panel.open){
+    if(riding){
+      const train=trainPose(clockTime);
+      pos.x=-10.82;pos.y=13.2;pos.z=train.z;
+      pos.yaw+=dt*1.48*(Number(keys.has('ArrowRight'))-Number(keys.has('ArrowLeft')));
+    }else movement(dt);
+  }
+  const goal=slots[timeSlot], ease=1-Math.exp(-dt*2.3);
+  for(const k of ['sun','sky','horizon','fog','light'])env[k]=env[k].map((x,i)=>lerp(x,goal[k][i],ease));
+  env.night=lerp(env.night,goal.night,ease);
+  const cam=camera();render(clockTime,cam);
+  if(clockTime-lastRefresh>.07){lastRefresh=clockTime;updateUI(cam);refreshMap();}
+  requestAnimationFrame(frame);
+}
+try{
+  if(!gl)throw Error('WebGL is unavailable');
+  setup();buildMap();uiCount();canvas.style.cursor='grab';requestAnimationFrame(frame);
+}catch(error){
+  console.error(error);$('enter').disabled=true;
+  $('intro').querySelector('p').textContent='Meridian’s 3D view needs WebGL. You can still open the atlas to browse its districts.';
+  for(const button of [$('light'),$('sound')])button.disabled=true;
+}
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();say('The 3D renderer was interrupted.');});
+canvas.addEventListener('webglcontextrestored',()=>{
+  land.length=solid.length=plan.length=0;seed=2030;setup();buildMap();say('3D view restored.');
+});
+</script>
+</body>
+</html>
