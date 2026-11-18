@@ -14,12 +14,18 @@ button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:2px solid var(--mint);outline-offset:4px}
 canvas#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,#0a1c256e,transparent 18%,transparent 61%,#07171b9e),linear-gradient(90deg,#07191d68,transparent 56%)}
-header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:24px 34px;border-bottom:1px solid #d6f4eb31;background:#10252b35}
-.brand{display:flex;align-items:center;gap:11px;font-size:13px;font-weight:800;letter-spacing:.17em;white-space:nowrap}
-.brand svg{width:32px;height:32px;color:var(--mint)}
-.brand span span{color:var(--mint)}
+header{position:fixed;top:0;left:0;right:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;padding:20px 34px;border-bottom:1px solid #d6f4eb31;background:#0c202761;backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:11px;white-space:nowrap}
+.brand svg{width:32px;height:32px;color:var(--mint);flex-shrink:0}
+.brand-copy{display:flex;align-items:center;gap:14px}
+.wordmark{font-size:13px;font-weight:800;letter-spacing:.17em}
+.wordmark span{color:var(--mint)}
+.credit{display:flex;align-items:center;gap:7px;padding-left:14px;border-left:1px solid var(--line);font-size:11px;letter-spacing:.02em;color:#d9e4df}
+.credit a{color:var(--mint);text-decoration:none;text-underline-offset:3px}
+.credit a:hover{text-decoration:underline}
+.credit a:focus-visible{outline:2px solid var(--mint);outline-offset:3px;border-radius:2px}
 .clock{font:11px var(--mono);letter-spacing:.16em;white-space:nowrap}
-.tools{display:flex;gap:6px}
+.tools{display:flex;gap:6px;justify-self:end}
 .tool,.outline{border:1px solid var(--line);background:#12272acd;border-radius:5px;padding:9px 11px;font:11px var(--mono);letter-spacing:.06em;white-space:nowrap}
 .tool:hover,.outline:hover{background:#29443d;border-color:#bcf1ad}
 .tool[aria-pressed=true]{color:var(--mint);border-color:#b7ffaa77}
@@ -30,6 +36,8 @@ h1{font-size:clamp(63px,10.5vw,158px);letter-spacing:-.09em;line-height:.82;font
 h1 em{display:block;color:#d8efc7;font-style:normal;font-weight:330;font-size:.63em;letter-spacing:-.07em;margin-top:10px}
 .intro p{max-width:360px;margin:0 0 21px;color:#edf2e6;font-size:15px;line-height:1.6}
 .actions{display:flex;gap:10px;align-items:center}
+.intro-controls{margin-top:14px;color:#e1eae1;font:11px var(--mono);letter-spacing:.025em}
+.touch-hint{display:none}
 .primary{background:var(--mint);border:1px solid var(--mint);color:#12251a;border-radius:5px;padding:12px 16px;font-weight:750;font-size:13px}
 .primary:hover{background:#e4ffce}
 .primary span{margin-left:12px}
@@ -69,15 +77,38 @@ kbd{color:var(--mint);font:11px var(--mono);border:1px solid var(--line);padding
 .pad button:first-child{grid-column:2}
 .pad button:nth-child(2){grid-column:1}
 [hidden]{display:none!important}
-@media(pointer:coarse){body.play #touch{display:flex}}
-@media(max-width:700px){header{padding:13px 12px}.brand{letter-spacing:.1em;font-size:11px;gap:5px}.brand svg{width:24px;height:24px}.clock{display:none}.tool{padding:8px 6px;font-size:10px}.intro{left:18px;bottom:17vh;max-width:89vw}.intro h1{font-size:clamp(62px,15vw,100px)}.intro p{max-width:290px}.mapbox{width:124px;right:12px;bottom:16px}body:not(.play) .mapbox{display:none}#status{left:15px;bottom:18px;font-size:9px;letter-spacing:0}#loc{top:73px;left:14px}#loc strong{font-size:19px}#bearing{top:70px;left:auto;right:13px;transform:none}#toast{right:12px;top:123px}#prompt{bottom:34%;white-space:normal}.dialog-inner{padding:20px}}
+@media(pointer:coarse){body.play #touch{display:flex}.desktop-hint{display:none}.touch-hint{display:inline}}
+@media(max-width:900px){
+  .brand-copy{flex-direction:column;align-items:flex-start;gap:3px}
+  .credit{padding-left:0;border-left:0}
+}
+@media(max-width:700px){
+  header{grid-template-columns:1fr auto;gap:8px;padding:12px}
+  .brand{gap:6px}.brand svg{width:23px;height:23px}
+  .wordmark{font-size:11px;letter-spacing:.1em}.credit{font-size:10px;gap:5px;letter-spacing:0}
+  .clock{display:none}.tools{gap:4px}.tool{padding:8px 6px;font-size:10px}
+  .intro{left:18px;bottom:14dvh;max-width:89vw}
+  .intro h1{font-size:clamp(54px,15vw,100px)}.intro p{max-width:290px}
+  .mapbox{width:124px;right:12px;bottom:16px}body:not(.play) .mapbox{display:none}
+  #status{left:15px;bottom:18px;font-size:9px;letter-spacing:0}
+  #loc{top:73px;left:14px}#loc strong{font-size:19px}
+  #bearing{top:70px;left:auto;right:13px;transform:none}
+  #toast{right:12px;top:123px}#prompt{bottom:34%;white-space:normal}
+  .dialog-inner{padding:20px}
+}
 </style>
 </head>
 <body>
-<canvas id="world" aria-label="Interactive 3D view of Meridian"></canvas>
+<canvas id="world" tabindex="-1" aria-label="Interactive 3D view of Meridian"></canvas>
 <div class="shade"></div>
 <header>
-  <div class="brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="13.5" stroke="currentColor"/><path d="M2 16h28M16 2c-9 8-9 20 0 28m0-28c9 8 9 20 0 28M7 7l18 18" stroke="currentColor"/></svg><span>MERIDIAN <span>/ 2030</span></span></div>
+  <div class="brand">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="13.5" stroke="currentColor"/><path d="M2 16h28M16 2c-9 8-9 20 0 28m0-28c9 8 9 20 0 28M7 7l18 18" stroke="currentColor"/></svg>
+    <div class="brand-copy">
+      <span class="wordmark">MERIDIAN <span>/ 2030</span></span>
+      <span class="credit">Made by Priy <a href="https://x.com/alwayspriyesh" target="_blank" rel="noopener noreferrer" aria-label="@alwayspriyesh on X">@alwayspriyesh</a></span>
+    </div>
+  </div>
   <div class="clock" id="clock">18:24 LOCAL</div>
   <div class="tools"><button class="tool" id="light" title="Cycle time of day (T)">DUSK</button><button class="tool" id="sound" aria-pressed="false" title="Toggle ambient sound">SOUND OFF</button><button class="tool" id="help" title="Controls (?)" aria-label="Controls">?</button></div>
 </header>
@@ -86,6 +117,7 @@ kbd{color:var(--mint);font:11px var(--mono);border:1px solid var(--line);padding
   <h1>Meridian<em>2030</em></h1>
   <p>A coastal city built for higher tides. Cross the harbor, trace the Silkline rail, and see what grew where the water came in.</p>
   <div class="actions"><button class="primary" id="enter">Explore Meridian <span aria-hidden="true">↗</span></button><button class="outline" id="atlasIntro">OPEN ATLAS</button></div>
+  <div class="intro-controls"><span class="desktop-hint">WASD to move · Drag to look</span><span class="touch-hint">Use the arrow pad to move · Drag to look</span></div>
 </section>
 <div id="bearing" hidden></div>
 <div id="loc" hidden><button class="tool" id="mode" hidden>FLIGHT [F]</button><strong id="zone">South Lookout</strong></div>
@@ -638,7 +670,7 @@ function uiCount(){$('surveys').textContent=visited.size+' / '+landmarks.length+
 function zeroMotion(){vx=vy=vz=0;keys.clear();}
 function enter(){
   if(started||!scene)return;
-  if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
+  canvas.focus({preventScroll:true});
   started=true;document.body.classList.add('play');$('intro').hidden=true;
   for(const id of ['bearing','loc','cross'])$(id).hidden=false;
   if(target<0)target=0;
@@ -765,7 +797,12 @@ map.addEventListener('click',e=>{
   if(i<0){atlas();return;}
   enter();target=target===i?-1:i;if(target>=0)say('Tracking '+landmarks[i].name);
 });
-const modeButton=$('mode');modeButton.onclick=toggleMode;modeButton.title='Switch flight or walk (F)';
+const modeButton=$('mode');
+modeButton.onclick=()=>{
+  toggleMode();
+  canvas.focus({preventScroll:true});
+};
+modeButton.title='Switch flight or walk (F)';
 const moving=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyC','ShiftLeft','ShiftRight','PageUp','PageDown']);
 window.addEventListener('keydown',e=>{
   if(panel.open||e.metaKey||e.ctrlKey||e.altKey)return;
